@@ -15,9 +15,9 @@ rmodel = tf.keras.models.load_model("models/image_localization_model.h5", compil
 
 app = Flask(__name__)
 
-
 with open('label_binary.pkl', 'rb') as file:
     encoder = pickle.load(file)
+
 
 labels = '''airplane automobile bird cat deerdog frog horseship truck'''.split()
 
@@ -34,25 +34,26 @@ def predictDrawbox(model, image, le):
     # get class name
     trans = le.inverse_transform(predict[..., 4:])
     file_object = io.BytesIO()
-    img= Image.fromarray(image.astype('uint8'))
+    img = Image.fromarray(image.astype('uint8'))
     draw = ImageDraw.Draw(img)
     draw.rectangle([x, y, w, h], outline='red')
     img.save(file_object, 'PNG')
-    base64img = "data:image/png;base64,"+b64encode(file_object.getvalue()).decode('ascii')
-    return base64img,trans[0]
+    base64img = "data:image/png;base64," + b64encode(file_object.getvalue()).decode('ascii')
+    return base64img, trans[0]
 
 
 @app.route("/")
 def home():
     return render_template("home.html")
 
+
 @app.route('/uploader', methods=['GET', 'POST'])
 def upload_file1():
     if request.method == 'POST':
         f = request.files['file']
-        path = "TestDataset/TestImageClassification/"+f.filename
+        path = "TestDataset/TestImageClassification/" + f.filename
         imgdata = cv2.resize(cv2.imread(path), (32, 32))
-        n = np.array(imgdata)/255
+        n = np.array(imgdata) / 255
         print(n.shape)
         p = n.reshape(1, 32, 32, 3)
         try:
@@ -63,19 +64,17 @@ def upload_file1():
             print("predicted label is {}".format(predicted_label))
             return "predicted label is {}".format(predicted_label)
 
+
 @app.route('/imageLocalUploader', methods=['GET', 'POST'])
 def upload_file2():
     if request.method == 'POST':
         f = request.files['file']
-        path = "TestDataset/TestImageLocalization/"+f.filename
+        path = "TestDataset/TestImageLocalization/" + f.filename
         imgdata = cv2.resize(cv2.imread(path), (228, 228))
         rimg = np.array(imgdata)
-        finalimg = predictDrawbox(rmodel,rimg,encoder)
-        return render_template("plot.html",displayimage=finalimg[0],label=finalimg[1])
+        finalimg = predictDrawbox(rmodel, rimg, encoder)
+        return render_template("plot.html", displayimage=finalimg[0], label=finalimg[1])
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-
